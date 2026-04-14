@@ -47,6 +47,9 @@ class Embeddings(nn.Module):
         return pe
     
 class SelfAttn(nn.Module):
+    """
+    This performs the self attention. This is implemented for single head only. 
+    """
     def __init__(self, d_model, d_k):
         super().__init__()
 
@@ -67,6 +70,9 @@ class SelfAttn(nn.Module):
         return outputs
 
 class MultiHeadAttn(nn.Module):
+    """
+    This class performs the multi head attention.
+    """
     def __init__(self, d_model, num_heads):
         super().__init__()
 
