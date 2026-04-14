@@ -118,3 +118,21 @@ class MultiHeadAttn(nn.Module):
         outputs = self.wo(outputs)
 
         return outputs
+
+
+class FFN(nn.Module):
+    def __init__(self, d_model):
+        super().__init__()
+
+        self.ffn = nn.Sequential(
+            nn.Linear(d_model, 4 * d_model),
+            nn.ReLU(),
+            nn.Linear(4 * d_model, d_model)
+        )
+
+        self.norm = nn.LayerNorm(d_model)
+
+    def forward(self, x):
+        ffn_out = self.ffn(x)
+        x = self.norm(ffn_out)
+        return x
