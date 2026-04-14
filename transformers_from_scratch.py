@@ -97,19 +97,15 @@ class MultiHeadAttn(nn.Module):
 
 
     def forward(self, x):
-        seq_len = x.shape[0]
+        batch_size, seq_len, _ = x.shape
 
         Q = self.wq(x)
         K = self.wk(x)
         V = self.wv(x)
 
-        Q = Q.view(seq_len, self.num_heads, self.d_k)
-        K = K.view(seq_len, self.num_heads, self.d_k)
-        V = V.view(seq_len, self.num_heads, self.d_k)
-
-        Q = Q.transpose(0, 1)
-        K = K.transpose(0, 1)
-        V = V.transpose(0, 1)
+        Q = Q.view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
+        K = K.view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
+        V = V.view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
 
         # Calculate the attention scores
 
@@ -120,8 +116,8 @@ class MultiHeadAttn(nn.Module):
         outputs = weights @ V
 
         # Combine the heads
-        outputs = outputs.transpose(0, 1).continguous()
-        outputs = outputs.view(seq_len, self.d_model)
+        outputs = outputs.transpose(1, 2).contiguous()
+        outputs = outputs.view(batch_size, seq_len, self.d_model)
 
         outputs = self.wo(outputs)
 
