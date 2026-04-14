@@ -1,31 +1,39 @@
+"""
+This is transformers from scratch implementation with pytorch
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
 
 class Embeddings(nn.Module):
-    def __init__(self, num_embed, dim, seq_len):
+    def __init__(self, num_embed, dim):
         # super().__init__(*args, **kwargs)
-        self.num_embed = num_embed
-        self.seq_len = seq_len
-        self.dim = dim
+        # self.num_embed = num_embed
+        # self.seq_len = seq_len
+        # self.dim = dim
+        self.embedding = nn.Embedding(num_embed, dim)
 
-    def tokenization(self, num_embed: int, dim: int):
-        """
-        This function does general tokenization of words
+    # def tokenization(self, num_embed: int, dim: int):
+    #     """
+    #     This function does general tokenization of words
 
-        input:
-            num_embed:  This signifies the number of words you want to have in your vocab. 
-                        For example, if you set it to 100, You want to train this mini LLM with only 100 words.
+    #     input:
+    #         num_embed:  This signifies the number of words you want to have in your vocab. 
+    #                     For example, if you set it to 100, You want to train this mini LLM with only 100 words.
 
-            dim: This handles the dimension of each of these words. For example, if you set it as 512, then each word in your 
-                sentence or paragraph gets converted into a vector with 512 dimension. 
+    #         dim: This handles the dimension of each of these words. For example, if you set it as 512, then each word in your 
+    #             sentence or paragraph gets converted into a vector with 512 dimension. 
         
-        Returns:
-            Embedding: A embedding matrix of size (number of words in input x dim)
-        """
-        input_embeddings = nn.Embedding(num_embeddings=num_embed, embedding_dim=dim)
-        return input_embeddings
+    #     Returns:
+    #         Embedding: A embedding matrix of size (number of words in input x dim)
+    #     """
+    #     input_embeddings = nn.Embedding(num_embeddings=num_embed, embedding_dim=dim)
+    #     return input_embeddings
+
+    def forward(self, x):
+        return self.embedding(x)
     
     def pos_embedding(self, seq_len, d_model):
         """
@@ -38,7 +46,7 @@ class Embeddings(nn.Module):
 
         # Create a position ID
         position = torch.arange(seq_len).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, seq_len, 2)*(-math.log(10000)/d_model))
+        div_term = torch.exp(torch.arange(0, d_model, 2)*(-math.log(10000)/d_model))
 
         pe = torch.zeros(seq_len, d_model)
         pe[:, 0::2] = torch.sin(position*div_term)
@@ -63,7 +71,7 @@ class SelfAttn(nn.Module):
         V = self.wv(x)
 
         scores = Q @ K.T
-        scores /= math.sqrt(Q.shape(-1))
+        scores /= math.sqrt(Q.size(-1))
 
         weights = F.softmax(scores, dim=-1)
         outputs = weights @ V
@@ -119,7 +127,6 @@ class MultiHeadAttn(nn.Module):
 
         return outputs
 
-
 class FFN(nn.Module):
     def __init__(self, d_model):
         super().__init__()
@@ -134,5 +141,26 @@ class FFN(nn.Module):
 
     def forward(self, x):
         ffn_out = self.ffn(x)
+        x = x + ffn_out
         x = self.norm(ffn_out)
+        return x
+
+# class Decoder
+
+class TransformerBlock(nn.Module):
+    def __init__(self, d_model, num_heads):
+        super().__init__()
+
+        self.attn = MultiHeadAttn(d_model=d_model, num_heads=num_heads)
+        self.norm1 = nn.LayerNorm(d_model)
+
+        self.ffn = FFN(d_model=d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+
+    def forward(self, x):
+        attn_out = self.attn(x)
+        x = self.norm1(x+attn_out)
+        ffn_out = self.ffn.ffn(x)
+        x = self.norm2(x+ffn_out)
+
         return x
